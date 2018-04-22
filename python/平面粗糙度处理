@@ -1,0 +1,389 @@
+# _*_ coding:utf-8 _*_
+
+#Deltx = 346.25
+#Delty = 346.042
+#Deltz = 346.042 * sqrt(2) = 489.524
+
+######################################库输入部分######################################
+import csv
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import math
+#########################################################################################
+
+##函数部分
+def Data_deal():
+	NUM = 0 #统计顶峰个数的变量；
+	num_k = 0 #统计均方的个数；
+	sum_k = 0 #统计均方总数；
+	
+	sum_data = 0.0 
+		
+	a = np.zeros((9), dtype=np.float32) #寻找顶峰的中介数组；
+	
+	###################计算数据总的平均值#####################################
+	for i in range(0, 640):
+		for j in range(0, 480):
+			sum_data = sum_data + Data_n[i][j]
+			
+	average_data = float(sum_data / 307200)
+	#print("总的数据平均值：\t%f" % (average_data))
+	#########################################################################
+	
+	###################寻找顶峰个数和顶峰数据###################################
+	for i in range(1, 639, 2):
+		for j in range(1, 479, 2):
+			for k in range(0, 3):
+				a[0 * 3 + k] = float(Data_n[i - 1][k + j - 1])
+				a[1 * 3 + k] = float(Data_n[i][k + j - 1])
+				a[2 * 3 + k] = float(Data_n[i + 1][k + j - 1])
+						
+			k_k = 0
+			k_k1 = (a[0] + a[8] + a[2] + a[6]- 4 * a[4]) / (489.524 * 489.524)
+			k_k2 = (a[1] + a[7] - 2 * a[4]) / (346.042 * 346.042)
+			k_k3 = (a[3] + a[5] - 2 * a[4]) / (346.25 * 346.25)
+			k_k = (k_k1 + k_k2 + k_k3) / 4
+			num_k = num_k + 1
+			sum_k = sum_k + k_k * k_k
+				
+			a_max = 0.0
+			for j in range(0, 9):
+				if abs(a[j]) > a_max:
+					a_max = abs(a[j])
+					
+			if a_max == abs(a[4]):
+				NUM = NUM + 1
+				Data[NUM - 1] = a_max  #顶峰的值；
+	#################################################################################
+	
+	######################寻找超过平均值的顶峰个数#######################################
+	pp = 0
+	num_n0 = 0
+	num_average = 0
+	
+	delt_Zs_d = np.zeros((10000), dtype=np.float32) #
+	
+	average_Zs = sum(Data) / NUM
+	for i in range(0, NUM):
+		if Data[i] > 0:
+			Data_top[pp] = Data[i]
+			pp = pp + 1  #顶峰个数；
+		if Data[i] > 41250:    #这里请替换为之后计算出的d值
+			num_n0 = num_n0 + 1
+			delt_Zs_d[num_n0 - 0] = Data[i] - 41250 #这里请替换为之后计算出的d值 
+		if Data[i] > average_Zs:
+			num_average = num_average + 1
+		
+	#################################################################################
+	
+	######################数据输出部分###############################################
+	average_Zs = sum(Data_top) / pp #顶峰平均值；	
+	print("测试输出：             %f" % (Data_top[1]))
+	print("顶峰个数N：            %d" % (pp))
+	print("曲率总数：             %f" % (sum_k))
+	print("曲率计算次数：         %d" % (num_k))
+	print("曲率：                 %f" % (sum_k / num_k))
+	delt_k = math.sqrt(float(sum_k / num_k))  #均方根曲率；
+	print("均方根曲率：           %f" % (delt_k))
+	print("超过平均值的峰值个数Ns: %d" % (num_average)) 	
+	#print("超过d值的峰值个数n0:    %d" % (num_n0))
+	
+	######################负载和杨氏模量数据输入部分#######################################
+	print("迭代计算")
+	#P = input("请输入负载P：")
+	#E = input("请输入杨氏模量E：")
+	P =  2 * 3.749E-6
+	E = 1.38E-9
+	###################################################################################
+	
+	##################################计算顶峰极值部分数据输出部分#########################
+		
+	print("顶峰平均值：          %d" % (average_Zs))
+	print("顶峰最大值：          %d" % (max(Data_top)))
+	print("顶峰最小值：          %d" % (min(Data_top)))
+	###################################################################################
+	
+	##################################迭代计算部分#######################################
+	Data_contact = np.zeros((307200), dtype=np.float32) #顶峰接触的个数；
+	
+	lll = 0
+	delt_p = np.zeros((307200), dtype=np.float32) #预期负载和给定负载的差值；
+	sum_A_contact = np.zeros((307200), dtype=np.float32) #计算接触面积；
+	
+	for d in range(47500, 48000, 5):	#可以第一次粗略计算一个值，第二次步长取小在小区间计算；	
+		sum_p = 0.0
+		n0 = 0
+		for i in range(0, 640):
+			for j in range(0, 480):
+				if abs(Data_n[i][j]) > d:
+					Data_contact[n0] = float(Data_n[i][j])
+					n0 = n0 + 1
+		
+		#print("n0: %d" %(n0))
+		#print(Data_contact)
+		for i in range(0, n0):
+			sum_p = sum_p + (4 / 3 * float(E) * (1 / math.sqrt(delt_k)) * 
+			(Data_contact[i] - d) * math.sqrt(Data_contact[i] - d))
+			sum_A_contact[i] = sum_A_contact[i] + 3.1415926 * (Data_contact[i] - d)	/ delt_k
+		delt_p[lll] = abs(sum_p - float(P))
+		lll = lll + 1
+	
+	min_p = 1000000000000
+	num_ID = 0
+	for i in range(0, lll):
+		if min_p > delt_p[i]:
+			min_p = delt_p[i]
+			#print(min_p)
+			num_ID = i
+	
+	print("最接近P时的d值：    %d" %(47500 + num_ID * 5))
+	#print(min_p)
+	
+	d_new = 47500 + num_ID * 5.0
+	print(d_new)
+	num_d_new = 0
+	delt_Zs_d_new = np.zeros((307200), dtype=np.float32)
+	
+	for i in range(0, 640):
+		for j in range(0, 480):
+				if abs(Data_n[i][j]) > d_new:    #这里为计算出的d值
+					num_d_new = num_d_new + 1
+					delt_Zs_d_new[num_d_new - 1] = Data_n[i][j] - d_new 
+	print("超过d值的数量d_num：%d" % (num_d_new))
+	
+	print(delt_Zs_d_new)
+	sum_PP = 0.0	
+	for i in range(0, num_d_new):
+		sum_PP = sum_PP + (3.1415926 * delt_Zs_d_new[i] / delt_k) #计算接触面积；
+	
+	print("接触面积为：       %f" %(sum_PP))
+	#################################################################################
+	
+#################################打开文件读取数据部分#############################	
+fp = open("1_1.csv",'r') #请在此处输入需要打开的文件名； 
+rdcsv = csv.reader(fp,dialect='excel')
+
+Data_n = np.zeros((640 * 480), dtype=np.float32).reshape(640, 480) #Data_n是所有负数的数组；
+Data_p = np.zeros((640 * 480), dtype=np.float32).reshape(640, 480) #Data_n是所有正的数组；
+#data3 = np.zeros((1280 * 480), dtype=np.float32).reshape(1280, 480)
+
+Data = np.zeros((307200), dtype=np.float32) #总的数据；
+Data_top = np.zeros((10000), dtype=np.float32) #顶峰个数；
+b = np.zeros((8), dtype=np.float32) #填充中介数组；
+
+i = 0
+j = 0
+k = 0
+
+for row in rdcsv: #依次读得.csv文件中的数据；
+		i = i + 1
+		if i < 641:
+			for k in range(0,480):
+				Data_n[i-1][k] = - float(row[k])
+				k = k + 1
+		else:
+			if i == 641:
+				k = 0
+			else:
+				for k in range(0,480):
+					Data_p[i-642][k] = row[k]
+					k = k + 1
+###########################################################################
+max_data = 0.0
+for i in range(0, 640):
+	for j in range(0, 480):
+		if max_data < Data_n[i][j]: #1_1的最大数据是49674.8
+			max_data = Data_n[i][j]
+			k = i
+			l = j
+						
+print("本数据的最大值为：%f" % (max_data))
+
+Data_contact = np.zeros((307200), dtype=np.float32) #顶峰接触的个数；
+delt_p = np.zeros((307200), dtype=np.float32) #预期负载和给定负载的差值；
+sum_A_contact = np.zeros((307200), dtype=np.float32) #计算接触面积；
+
+#################################坏点填充部分#############################	
+for i in range(1,639):
+	for j in range(1, 479):
+		if Data_n[i][j] == 0:
+			b[0] = float(Data_n[i - 1][j - 1])
+			b[1] = float(Data_n[i - 1][j - 0])
+			b[2] = float(Data_n[i - 1][j + 1])
+			b[3] = float(Data_n[i - 0][j - 1])
+			b[4] = float(Data_n[i - 0][j + 1])
+			b[5] = float(Data_n[i + 1][j - 1])
+			b[6] = float(Data_n[i + 1][j - 0])
+			b[7] = float(Data_n[i + 1][j + 1])
+		
+		if Data_n[i][j] == 0:
+			ll = 0	
+			sum_b = 0.0
+			for k in range(0, 8):
+				sum_b = sum_b + b[k]
+				if abs(b[k]) > 0:
+					ll = ll + 1
+			Data_n[i][j] = sum_b / ll #将0值处填充为周围8个数据的平均值；
+
+for i in range(1, 639):
+	if Data_n[i][0] == 0:
+		Data_n[i][0] = (Data_n[i - 1][1] + Data_n[i][1] + Data_n[i + 1][1]) / 3
+	if Data_n[i][479] == 0:
+		Data_n[i][479] = (Data_n[i - 1][478] + Data_n[i][478] + Data_n[i + 1][478]) / 3
+for j in range(1, 479):
+	if Data_n[0][j] == 0:
+		Data_n[0][j] = (Data_n[1][j - 1] + Data_n[1][j] + Data_n[1][j + 1]) / 3
+	if Data_n[639][j] == 0:
+		Data_n[639][j] = (Data_n[638][j - 1] + Data_n[638][j] + Data_n[638][j + 1]) / 3
+						
+#将填充之后的数据存放在data.csv文件中
+with open("data.csv","w+", newline='') as csvfile:
+	writer = csv.writer(csvfile)
+	writer.writerows(Data_n)
+
+P =  2 * 3.749E-6 #负载
+E = 1.38E-9 #杨氏模量
+n0 = 0
+
+lll = 0
+
+for d in range(47500, 49700, 50):	#可以第一次粗略计算一个值，第二次步长取小在小区间计算；	
+	sum_p = 0.0
+	n0 = 0
+	num_k = 0
+	sum_k = 0.0
+	for i in range(1, 639):
+		for j in range(1, 479):
+			
+			if abs(Data_n[i][j]) > d:
+				Data_contact[n0] = float(Data_n[i][j])
+				n0 = n0 + 1
+				k_k1 = (Data_n[i-1][j-1] + Data_n[i+1][j+1] + 
+				Data_n[i+1][j-1] + Data_n[i-1][j+1]- 4 * Data_n[i][j]) / (489.524 * 489.524)
+				k_k2 = (Data_n[i][j+1] + Data_n[i][j-1] - 2 * Data_n[i][j]) / (346.042 * 346.042)
+				k_k3 = (Data_n[i-1][j] + Data_n[i+1][j] - 2 * Data_n[i][j]) / (346.25 * 346.25)
+				k_k = (k_k1 + k_k2 + k_k3) / 4
+				num_k = num_k + 1
+				sum_k = sum_k + k_k * k_k
+	
+	delt_k = math.sqrt(float(sum_k / num_k))
+	print("均方根曲率delt_k:                 %f" % (delt_k))
+	print("本次扫描的d值：                    %f" % (d))
+	print("所有数据超过d值的顶峰个数n0:         %d" % (n0))
+	
+	for i in range(0, n0):
+		sum_p = sum_p + (4 / 3 * float(E) * (1 / math.sqrt(delt_k)) * 
+		(Data_contact[i] - d) * math.sqrt(Data_contact[i] - d))
+		sum_A_contact[i] = sum_A_contact[i] + 3.1415926 * (Data_contact[i] - d)	/ delt_k
+		delt_p[lll] = abs(sum_p - float(P))
+	
+	lll = lll + 1
+	
+min_p = 1000000000000
+num_ID = 0
+for i in range(0, lll):
+	if min_p > delt_p[i]:
+		min_p = delt_p[i]
+		#print(min_p)
+		num_ID = i
+
+print("最接近P时的ID值：    %d" %(num_ID))
+print("最接近P时的d值：    %f" %(47500 + num_ID * 50))
+	#print(min_p)
+	
+d_new = 47500 + num_ID * 50
+
+for i in range(1, 639):
+	for j in range(1, 479):
+		if Data_n[i][j] > d_new:
+			k_k1 = (Data_n[i-1][j-1] + Data_n[i+1][j+1] + 
+			Data_n[i+1][j-1] + Data_n[i-1][j+1]- 4 * Data_n[i][j]) / (489.524 * 489.524)
+			k_k2 = (Data_n[i][j+1] + Data_n[i][j-1] - 2 * Data_n[i][j]) / (346.042 * 346.042)
+			k_k3 = (Data_n[i-1][j] + Data_n[i+1][j] - 2 * Data_n[i][j]) / (346.25 * 346.25)
+			k_k = (k_k1 + k_k2 + k_k3) / 4
+			num_k = num_k + 1
+			sum_k = sum_k + k_k * k_k
+
+delt_k = math.sqrt(float(sum_k / num_k))
+print("确定d值之后的均方根曲率：        %f" % (delt_k))
+print("最接近P时的d值：                %f" % (d_new))
+num_d_new = 0
+delt_Zs_d_new = np.zeros((307200), dtype=np.float32)
+	
+for i in range(0, 640):
+	for j in range(0, 480):
+		if abs(Data_n[i][j]) > d_new:    #这里为计算出的d值
+			num_d_new = num_d_new + 1
+			delt_Zs_d_new[num_d_new - 1] = Data_n[i][j] - d_new 
+
+print("超过d值的数量d_num：%d" % (num_d_new))
+	
+print(delt_Zs_d_new)
+sum_PP = 0.0	
+for i in range(0, num_d_new):
+	sum_PP = sum_PP + (3.1415926 * delt_Zs_d_new[i] / delt_k) #计算接触面积；
+	
+print("接触面积为：       %f" %(sum_PP))
+
+
+
+
+#Data_deal() #进行计算处理数据的函数
+fp.close()
+################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###################作图部分############################################
+
+
+"""
+z = np.zeros((614400), dtype=np.float32)
+x = np.zeros((614400), dtype=np.int32)
+y = np.zeros((614400), dtype=np.int32)
+
+for l in range(0, 1280):
+	if l < 640:
+		for p in range(0, 480):
+			data3[l][p] = Data_n[l][p]
+			
+	else:
+		for p in range(0, 480):
+			data3[l][p] = Data_p[l - 640][p]
+
+for l in range(0, 1280):
+	for p in range(0, 480):
+		z[l * 480 + p] = data3[l][p]
+		x[l * 480 + p] = p
+		y[l * 480 + p] = l
+		
+		
+
+fig = plt.figure()
+ax = plt.subplot(111, projection='3d')
+ax.scatter(x[0:614400], y[0:614400], z[0:614400], c='g')
+ax.set_zlabel('Z')  
+ax.set_ylabel('Y')
+ax.set_xlabel('X')
+plt.show()"""

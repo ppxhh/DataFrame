@@ -1,0 +1,147 @@
+# _*_ coding:utf-8 _*_
+
+from tkinter import *
+from tkinter.filedialog import askdirectory
+import win32ui
+
+import csv
+import numpy as np
+import math
+
+def deduce():
+	g = G.get()
+	tb = Tb.get()
+	q1 = Q1.get()
+	q2 = Q2.get()
+	q3 = Q3.get()
+	p1 = P1.get()
+	pb = Pb.get()
+		
+	GG = float(g)
+	TTb = float(tb)
+	QQ1 = float(q1)
+	QQ2 = float(q2)
+	QQ3 = float(q3)
+	PP1 = float(p1)
+	PPb = float(pb)
+	
+	row_b = PPb * 293 * 68.9884 / (4.1 * (TTb))
+	sqrt_value = math.sqrt(68.9884 * PPb * 293 / row_b / 4.1 / (TTb))	
+	miu = GG / ((QQ1 + QQ2 + QQ3) / (PPb / 4.1) / sqrt_value - PP1 * GG / PPb / 1129.96 )
+	text = StringVar()
+	text.set(str(miu))	
+	lb = Label(root,textvariable=text).grid(row = 13, column = 3, sticky=W)
+	
+def data_deduce(fname):
+	a = np.zeros((100), dtype=np.float32)
+	b = np.zeros((100), dtype=np.float32)
+	c = np.zeros((100), dtype=np.float32)
+	d = np.zeros((100), dtype=np.float32)
+	e = np.zeros((100), dtype=np.float32)
+	f = np.zeros((100), dtype=np.float32)
+	
+	fp = open(fname,'r') 
+	rdcsv = csv.reader(fp,dialect='excel')
+	i=0
+	
+	print("The value: ")
+	
+	for row in rdcsv:
+		i = i + 1
+		if i > 1:		
+			a[i-2] = row[1]
+			b[i-2] = row[2]
+			c[i-2] = row[3]
+			d[i-2] = row[4]
+			#e[i-2] = row[5]
+			#f[i-2] = row[6]
+			print (a[i-2],b[i-2],c[i-2],d[i-2])
+			
+			sum_a = sum(a)
+			average_a = sum_a / (i-1)
+			sum_b = sum(b)
+			average_b = sum_b / (i-1)
+			sum_c = sum(c)
+			average_c = sum_c / (i-1)
+			sum_d = sum(d)
+			average_d = sum_d / (i-1)
+			"""sum_e = sum(e)
+			average_e = sum_e / (i-1)
+			sum_f = sum(f)
+			average_f = sum_f / (i-1)"""
+	a = StringVar() 
+	a.set("%f" % (average_a))  						
+	Entry(root,textvariable = a).grid(row = 3, column = 1, sticky=W)
+	
+	b = StringVar() 
+	b.set("%f" % (average_b))  						
+	Entry(root,textvariable = b).grid(row = 4, column = 1, sticky=W)
+	
+	c = StringVar() 
+	c.set("%f" % (average_c))  						
+	Entry(root,textvariable = c).grid(row = 5, column = 1, sticky=W)
+	
+	d = StringVar() 
+	d.set("%f" % (average_d))  						
+	Entry(root,textvariable = d).grid(row = 6, column = 1, sticky=W)
+	
+	#Label(root,text = "%f" % (average_b)).grid(row = 4, column = 1, sticky=W)
+	#Label(root,text = "%f" % (average_c)).grid(row = 5, column = 1, sticky=W)
+	#Label(root,text = "%f" % (average_d)).grid(row = 6, column = 1, sticky=W)
+	#Label(root,text = "%f" % (average_e)).grid(row = 7, column = 1, sticky=W)
+	#Label(root,text = "%f" % (average_f)).grid(row = 8, column = 1, sticky=W)
+					
+def selectPath():
+    dlg = win32ui.CreateFileDialog(1)
+    dlg.DoModal()
+    filename = dlg.GetPathName()
+    print(filename)
+    data_deduce(filename)
+    
+root = Tk()
+root.title("计算小软件")
+root.geometry('900x350+250+200')
+path = StringVar()
+
+Label(root,text = "感谢您使用本软件，给您带来的不便请谅解。").grid(row = 0, column = 1)
+Label(root,text = "各项平均值: ").grid(row = 2, column = 0, sticky=W)
+Label(root,text = "打开文件:(请您选择.csv类型文件)").grid(row = 1, column = 1)
+#Entry(root, textvariable = path).grid(row = 0, column = 1)
+Button(root, text = "选择", command = selectPath).grid(row = 1, column = 2, sticky=W)
+
+G = Entry(root)
+Tb = Entry(root)
+Q1 = Entry(root)
+Q2 = Entry(root)
+Q3 = Entry(root)
+P1 = Entry(root)
+Pb = Entry(root)
+
+Label(root,text = "请您输入以下各值: ").grid(row = 2, column = 2, sticky=E)
+Label(root,text = "质量流率G(kg/h) : ").grid(row = 3, column = 2, sticky=E)
+G.grid(row=3,column=3,sticky=E)
+Label(root,text = "缓冲罐的气体温度Tb(k)   : ").grid(row = 4, column = 2, sticky=E)
+Tb.grid(row=4,column=3,sticky=W)
+
+Label(root,text = "流化风量Q1(m3/h): ").grid(row = 5, column = 2, sticky=E)
+Q1.grid(row=5,column=3,sticky=W)
+Label(root,text = "冲压风量Q2(m3/h): ").grid(row = 6, column = 2, sticky=E)
+Q2.grid(row=6,column=3,sticky=W)
+Label(root,text = "补充风量Q3(m3/h): ").grid(row = 7, column = 2, sticky=E)
+Q3.grid(row=7,column=3,sticky=W)
+Label(root,text = "缓冲罐的压力P1(Bar) : ").grid(row = 8, column = 2, sticky=E)
+P1.grid(row=8,column=3,sticky=W)
+Label(root,text = "发料罐的压力Pb(Bar) : ").grid(row = 9, column = 2, sticky=E)
+Pb.grid(row=9,column=3,sticky=W)
+
+Button(root, text = "开始计算", command = deduce).grid(row = 10, column = 1, sticky=E)
+
+Label(root,text = "发料罐的压力P1(Bar): ").grid(row = 3, column = 0, sticky=E)
+Label(root,text = "缓冲罐的压力P2(Bar): ").grid(row = 4, column = 0, sticky=E)
+Label(root,text = "M(kg) : ").grid(row = 5, column = 0, sticky=E)
+Label(root,text = "流化风量Q1(m3/h): ").grid(row = 6, column = 0, sticky=E)
+Label(root,text = "冲压风量Q2(m3/h): ").grid(row = 7, column = 0, sticky=E)
+Label(root,text = "补充风量Q3(m3/h): ").grid(row = 8, column = 0, sticky=E)
+Label(root,text = "固气比: ").grid(row = 13, column = 2, sticky=E)
+
+root.mainloop()

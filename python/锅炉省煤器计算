@@ -1,0 +1,187 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#Guolu_compute
+#By Zengxin
+# 2018/04/12
+
+import math
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+
+#in parameter
+T1 = 282.0 #
+P1 = 29.5 #MPa
+H1 = 1239.3 #Kj/Kg
+Row1 = 1 / 0.00128303 #Kg/m3
+Cp1 = 4.869124 #Kj/kg/K
+
+#out parameter
+T2 = 336.8
+P2 = 28.9
+H2 = 1530.0
+Row2 = 1 / 0.00148250
+Cp2 = 5.927392
+
+#guanbijisuan
+L = 220 #m
+R = 0.0508 #m
+r = R - 0.00789
+pi = 3.141593
+Row_G = 7.93 * 1000 # Kg/m3
+Cpj = 0.5 #Kj/kg/K
+Mj = L * pi * Row_G * (R ** 2 - r ** 2)
+
+#Q_compute
+D0 = 1825 * 1000 / 3600 #kg/s
+Q0 = D0 * Cp1 * (T2 - T1) / L
+M = Row1 * L * pi * (r ** 2)
+
+#model1_T2_T1
+Td = (T1 + T2) / 2
+Cp = Cp1
+a1 = 2 * Q0 * D0 * Cp / (Td * Mj * Cpj)
+a2 = 2 * D0 * Cp
+a3 = Q0 / Td * (1 + M * Cp / Mj / Cpj)
+a4 = M * Cp
+
+#T1_T2_transferfunction
+def fx1(t, a, b, c, d):    
+    return 10 * (1 - 2 * math.exp(- (t * (b + c)) / (2 * d)) 
+            * (np.cosh((t *(b ** 2 / 4 +(b * c) / 2 + c ** 2 / 4 - a * d) ** (1 / 2)) / d) - 
+           (d * math.sinh((t * (b ** 2 / 4 + (b * c) / 2 + c ** 2 / 4 - a * d) **(1 / 2)) / d) *
+            ((b + c) / (2 * d) - c / d)) / (b ** 2 / 4 + (b * c) / 2 + c ** 2 / 4 - a * d) ** (1 / 2)))
+
+#deltT2_compute
+step = 0.0
+a_y = np.zeros((1000), dtype = np.float32)
+a_x = np.zeros((1000), dtype = np.float32)
+for i in range(0, 1000):
+    a_x[i] = step
+    a_y[i] = fx1(step, a1, a2, a3, a4)
+    step = step + 0.01
+        
+#model1_T2_D1
+b1 = 2 * Q0 * (H2 - H1) / (Td * Mj * Cpj)
+b2 = 2 * ((H2 - H1) - 0.8 * Q0 / D0)
+b3 = 2 * Q0 * D0 * Cp / (Td * Mj * Cpj)
+b4 = a2 + a3
+b5 = a4
+#T1_D2_transferfunction
+def fx2(t, a, b, c, d, e):
+    return ((10 * d) / a - (10 * d * math.exp(-(b * t) / (2 * c)) * 
+                            (np.cosh((t * (b ** 2 / 4 - a*c)**(1/2))/c) 
+                             - (c*np.sinh((t*(b**2/4 - a*c)**(1/2))/c)*
+                                (b/(2*c) + (10*a*e - 10*b*d)/(10*c*d)))/(b**2/4 - a*c)**(1/2)))/a)
+
+#deltT2_compute
+step = 0.0
+b_y = np.zeros((1000), dtype = np.float64)
+b_x = np.zeros((1000), dtype = np.float64)
+for i in range(0, 1000):
+    b_x[i] = step
+    b_y[i] = - fx2(step, b3, b4, b5, b1, b2)
+    step = step + 0.01
+
+#model1_T2_Q1
+c1 = 2 * Q0 / (Td * Mj * Cpj)
+c2 = b3
+c3 = b4
+c4 = b5
+
+def fx3(t, a, b, c, d):
+    return ((10*d)/a - (10*d*math.exp(-(b*t)/(2*c))*
+                        (np.cosh((t*(b**2/4 - a*c)**(1/2))/c) 
+                         + (b*np.sinh((t*(b**2/4 - a*c)**(1/2))/c))/(2*(b**2/4 - a*c)**(1/2))))/a)
+
+step = 0
+c_y = np.zeros((5000), dtype = np.float32)
+c_x = np.zeros((5000), dtype = np.float32)
+for i in range(0, 5000):
+    c_x[i] = step
+    c_y[i] = fx3(step, c2, c3, c4, c1)
+    step = step + 1
+
+#Model3_T2_T1
+miu = (Row2 - Row1) / (T2 - T1)
+V = L * pi * (r ** 2)
+d1 = D0 * Cp * Q0 / Td
+d2 = D0 * Cp * Mj * Cpj
+d3 = Q0 / Td * D0 * Cp
+d4 = (Q0 / Td + D0 * Cp) * Mj * Cpj + V * Q0 / Td * Row2 * Cp
+d5 = V * (Row2 * Cp + 0.8 * Q0 / D0 - miu) * Mj * Cpj
+
+def fx4(t, a, b, c, d, e):
+    return (((10*d)/a - (10*d*math.exp(-(b*t)/(2*c))*
+                         (np.cosh((t*(b**2/4 - a*c)**(1/2))/c) 
+                          - (c*np.sinh((t*(b**2/4 - a*c)**(1/2))/c)
+                             *(b/(2*c) + (10*a*e - 10*b*d)/(10*c*d)))/(b**2/4 - a*c)**(1/2)))/a))
+
+step = 0
+d_y = np.zeros((1000), dtype = np.float64)
+d_x = np.zeros((1000), dtype = np.float64)
+for i in range(0, 1000):
+    d_x[i] = step
+    d_y[i] = fx4(step, d3, d4, d5, d1, d2)
+    step = step + 0.01
+
+#model3_T2_D1
+e1 = Q0 / Td * (H2 - H1)
+e2 = (H2 - H1 - 0.8 * Q0 / D0) * Mj * Cpj
+e3 = d3
+e4 = d4
+e5 = d5
+
+step = 0
+e_y = np.zeros((1000), dtype = np.float64)
+e_x = np.zeros((1000), dtype = np.float64)
+for i in range(0, 1000):
+    e_x[i] = step
+    e_y[i] = - fx4(step, e3, e4, e5, e1, e2)
+    step = step + 0.01
+
+#model_T2_Q1
+f1 = Q0 / Td
+
+step = 0
+f_y = np.zeros((1000), dtype = np.float64)
+f_x = np.zeros((1000), dtype = np.float64)
+for i in range(0, 1000):
+    f_x[i] = step
+    f_y[i] = fx3(step, d3, d4, d5, f1)
+    step = step + 5
+
+#Save data
+with open("model6.txt","w+") as f:  
+    for i in range(0, 1000):
+        f.write(str(a_y[i])) 
+        f.write(' ')
+        f.write(str(b_y[i]))
+        f.write(' ')
+        f.write(str(c_y[i]))
+        f.write(' ')
+        f.write(str(d_y[i]))
+        f.write(' ')
+        f.write(str(e_y[i]))
+        f.write(' ')
+        f.write(str(f_y[i]))
+        f.write("\n")
+
+#plot graph
+plt.scatter(a_x, a_y)
+plt.scatter(d_x, d_y)
+#plt.ylim(0, 0.005)
+#plt.xlim(0, 5000)
+plt.show()
+
+plt.scatter(b_x, b_y)
+plt.scatter(e_x, e_y)
+#plt.ylim(0, 0.005)
+#plt.xlim(0, 5000)
+plt.show()
+
+plt.scatter(c_x, c_y)
+plt.scatter(f_x, f_y)
+#plt.ylim(0, 0.005)
+#plt.xlim(0, 5000)
+plt.show()

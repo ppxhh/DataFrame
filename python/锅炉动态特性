@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr 13 20:45:00 2018
+@author: Zengxin 170387
+"""
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+#in parameter
+T1 = 282.0 #
+P1 = 29.5 #MPa
+H1 = 1239.3 #kj/kg
+Row1 = 1 / 0.00128303 #kg/m3
+Cp1 = 4.869124 #kj/kg/K
+
+#out parameter
+T2 = 336.8
+P2 = 28.9
+H2 = 1530.0
+Row2 = 1 / 0.00148250
+Cp2 = 5.90
+
+#guanbijisuan
+N = 501
+L = 220 #m
+R = 0.0508 #m
+r = R - 0.00789
+pi = 3.141593
+Row_G = 7930 # kg/m3
+Cpj = 0.5 #kj/kg/K
+Mj = L * pi * Row_G * (R ** 2 - r ** 2) / 4 * N
+print(Mj)
+V0 = L * pi * (r ** 2 / 4) * N
+
+#Q_compute
+D0 = 1825 * 1000 / 3600 #kg/s
+Q0 = D0 * (H2 - H1)
+M = V0 * Row1
+print(M)
+
+K = Q0 / (D0 ** 0.8) / (30) 
+print(K)
+print(Q0)
+a_t = np.zeros((1000), dtype = np.float32)
+a_T2 = np.zeros((1000), dtype = np.float32)
+a_Tj = np.zeros((1000), dtype = np.float32)
+
+a_Tj[0] = 366.8
+a_T2[0] = 336.8
+a_t[0] = 0.0
+
+for i in range(1, 1000):
+	a_Tj[i] = a_Tj[i - 1] + 3 * (0.95* Q0 - K * ((D0) ** 0.8) * (a_Tj[i - 1] - a_T2[i - 1])) / Mj / Cpj
+	a_T2[i] = a_T2[i - 1] + 3 * (K * ((D0) ** 0.8) * (a_Tj[i - 1] - a_T2[i - 1]) - (D0) * Cp2 * (a_T2[i - 1] - T1 - 10)) / V0 / Row2 / Cp2 
+	a_t[i] = a_t[i - 1] + 3.0
+
+#Save data
+with open("model6.txt","w+") as f:  
+    for i in range(0, 1000):
+        f.write(str(a_T2[i])) 
+        f.write("\n")
+
+plt.scatter(a_t,  a_T2, label = 'T2')
+#plt.scatter(a_t,  a_Tj, label = 'Tj')
+plt.hlines(336.8, 3000, 0.5, colors = "c", linestyles = "dashed")
+plt.hlines(338.78, 3000, 0.5, colors = "c", linestyles = "dashed")
+plt.xlabel('Time/s')
+plt.ylabel('T2/℃')
+plt.xlim(0, 3000)
+plt.legend(loc = 0)
+plt.show()
