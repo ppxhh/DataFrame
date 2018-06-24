@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?This is particles Physical property?>
+<?This code can be a input of Ra_Particle program.?>
+
+<Particle_Aggregate>
+	<Particle Type = "coke">
+		<Radius>0.0005</Radius>   <!-- Unit: m -->
+		<Sphericity>0.95</Sphericity>
+		<Density>1900</Density>   <!-- Unit: kg/m3 -->
