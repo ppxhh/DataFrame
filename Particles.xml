@@ -1,9 +1,45 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?This is particles Physical property?>
-<?This code can be a input of Ra_Particle program.?>
+<?xml version="1.0" encoding="utf-8"?>
 
-<Particle_Aggregate>
-	<Particle Type = "coke">
-		<Radius>0.0005</Radius>   <!-- Unit: m -->
-		<Sphericity>0.95</Sphericity>
-		<Density>1900</Density>   <!-- Unit: kg/m3 -->
+<!--This is particles Physical property!-->
+<!--This code can be a input of Ra_Particle program.!-->
+<Particle_Aggregate> 
+  <Particle Type="coke"> 
+    <Radius>0.0005</Radius>  
+    <!-- Unit: m -->  
+    <Sphericity>0.95</Sphericity>  
+    <Density>1900</Density>  
+    <!-- Unit: kg/m3 Unit = "micron" --> 
+    <Lambda>
+    1.00 	1.30 	0.02 
+   	4.00 	1.30 	0.02 
+	5.00 	1.20 	0.04 
+	6.00 	1.15 	0.07 
+	7.00 	1.15 	0.11 
+	10.00 	1.15 	0.19 
+	20.00 	1.15 	0.12 
+	25.00 	1.14 	0.23 
+	</Lambda>
+    <Refractive_index>1.25</Refractive_index>  
+    <absorption_coefficient>0.1</absorption_coefficient>
+    <!-- Complex refractive index m = n - ik. --!>
+  </Particle>  
+  <Particle Type="ash"> 
+    <Radius>0.0005</Radius>  
+    <!-- Unit: m -->  
+    <Sphericity>0.95</Sphericity>  
+    <Density>1900</Density>  
+    <!-- Unit: kg/m3 -->  
+    <Refractive_index>1.25</Refractive_index>  
+    <absorption_coefficient>0.1</absorption_coefficient>
+  </Particle>  
+  <Particle Type="char"> 
+    <Radius>0.0005</Radius>  
+    <!-- Unit: m -->  
+    <Sphericity>0.95</Sphericity>  
+    <Density>1900</Density>  
+    <!-- Unit: kg/m3 -->  
+    <Refractive_index>1.25</Refractive_index>  
+    <absorption_coefficient>0.1</absorption_coefficient> 
+  </Particle> 
+</Particle_Aggregate>
+
